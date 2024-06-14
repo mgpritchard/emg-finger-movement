@@ -1,0 +1,45 @@
+load index raw file and index electrodes #1,2,3 into matlab
+
+identify location in Index_Raw_Full[Electrode_1] where Index_Electrode_1[Movement_1] appears
+verify this is the same location for Electrodes 2 & 3.
+-- Yes: we now know the extracted electrode samples are synchronised
+verify that the location of Movement_2 is >150 samples later than the start of Movement_1
+-- Yes: we now know it is one 150sample extract per movement, not overlapping
+verify that the location of Movement_12 is later than that of Movement_1 and Movment_2
+-- Yes: we can now assume the moveme	nt extracts are sequential
+
+Visualise the first 4 movements on Electrode 1. These will definitely be train data, so not biasing. Just getting a sense of the possible sample frequency / movement duration.
+-- 1 movement every 200 samples (approx 100 samples on, 100 samples off). 727 total, speculate either 1 second on 1 second off at 100Hz ie 10mins total, or 0.5 seconds on 0.5 seconds off at 200Hz ie 5mins total
+
+Visualise Movement 1 vs subsequent pause, on Electrode 2. Movement appears to have quite a bit of dead time within the 150sample slice. This will cause difficulty if we slice it too narrowly with time-windowing procedure.
+given gestures are 150samples, a 50sample offset of windows will be too few; you could only get 2-3 windows but need to concat overlapped pairs.
+Therefore 25ms offset of 50ms windows? this leaves quite few samples per window (and probably too few for FFT).
+
+75ms windows with 25ms offset.
+0 - 75 & 25 - 100
+25 - 100 & 50 - 125
+50 - 125 & 75 - 150
+depending on fs this is either 0.75 or 0.375s, so lowest freq we could possible FFT is 1-0.75=1.33 to 1/0.375=2.66 Hz.
+
+-- this sets us an additional goal of being able to make predictions within 25ms (or 12.5 if 200Hz!). don't make target of dev, but do use as measure for discussion.
+
+for expediency (and for sake of not knowing signal properties), will rectify but *not* LPF. rectifying does risk alias-like loss of HF if eg 10 -10 10 instead of 10 0 -10 0 10 but oh well, we dont want HF anyway
+
+
+splitting the data:
+-- get repeat count of each. find lowest. decide 70/30 split or etc, apply that to all, ignore remaining overflow gestures so the classes are balanced.
+index 727
+middle 711
+ring 772
+little 825
+thumb 784
+rest 518
+victory 242
+
+*could* artificially gain rest data from in-between gestures. this would allow an effective total (discounting victory) of 711. but could introduce systematic bias, we can't be sure such rests are equivalent (and the timing may be different).
+So effective sample count is 500 per class (for sake of round numbers). this is still lots!
+we will split this 70/30 train/validate. the first 350 gestures will be modelling. the next 150 will be locked off, unseen, for a balanced validation set. any remaining are bonus test data :)
+
+Victory is interesting. We *could* try some augmentation to upsample it; we *could* extend the system to some kind of multilabel classification: predictions are mostly one-hot but Victory is predicted if both Index and Middle are, and therefore not modelled as its own class (and its data either used all for testing, or some of it used to train with both Index and Middle labels).
+BUT for simplicity, we will not explore that at this stage. Instead we will simply accept the unbalance; this is an underrepresented class and we hence may anticipate more errors - though we hope it will fail to either index or middle.
+We will split Victory 70/30 too with a truncation to 240 total, for 168 train and 72 validate.
