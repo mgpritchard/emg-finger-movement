@@ -1,0 +1,43 @@
+https://www.kaggle.com/datasets/nccvector/electromyography-emg-dataset/data
+-- current layout in cropped_arranged is 1 file per electrode, 1 row per sample (e.g. 825 samples in little finger), 1 column per timestamp
+---- unclear sample freq. *might* be a myo? (forearm, 8 electrodes, hobbyist). Myo sample freq is 200Hz, assuming all samples taken.
+
+-- check if samples are synchronous, even manual check if need be
+
+-- so long as the 825 samples match for each electrode, then great
+
+-- also sense-check that theyre in chronological order. no time travelling here please.
+
+-- then python/pandas or matlab to data wrangle them into a better format
+
+-- then separate. split off reserved train/test and locked-away unseen validation data. temporal separation of each; take the earlier gesture performances for learning and use to predict the later
+
+-- then rectify? i dont do zero-crossing anyway, and makes amplitude more meaningful. 
+--- maybe LPF? but hard to say without freq info. could visualise.
+
+-- then feature extract. they have done this but without info on window properties etc (and a diff feat array), so lets do it from scratch with the usual alg.
+
+-- then CASH. a simple search space here, e.g. SVMs RFs and LDAs.
+
+-- then predict the locked-off data
+
+-- measure performance on accuracy, confusion matrix.
+---- determine in advance the more/less important error types? neighbouring fingers ok? task-relevance?
+---- could predict data sequentially & plot (line graph with levels) to see stability
+------ but data performances were done one at a time; raw file is repeated movements of X finger, so repeated chronological predictions should all be the same class, its less interesting
+-------- COULD try to predict the whole remaining datastreams, to identify the points with and without movement?? an *extension*!
+
+
+
+*-----*
+
+rule out:
+
+-- multilabel / onehot classes to construct the peace sign
+----- too much added complexity, especially for one class
+
+-- discriminating between flexion, extension, lateral movement, thumb abduction/adduction, etc
+----- we don't know anything about this from the data description, nor reliable enough expertise to guess from signal trace
+
+-- building temporal knowledge into predictions (i.e. surprisal from last class)
+----- we don't know much about experimental paradigm, and unless lack of timestamps means signals are frankensteined then it seems gestures are performed in batches anyway. (suggests risk of temporal leakage from batch collection, but can't fix their problems now -- though could check for temporal overfit by predicting the whole datastream? ie ensure it doesnt predict "index session non-movement" as "index")
