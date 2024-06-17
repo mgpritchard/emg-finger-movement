@@ -26,7 +26,7 @@ from live_feature_extraction import generate_feature_vectors_from_samples, gener
 
 
 gestures_to_idx = {'index':1.,'middle':2.,'ring':3.,'little':4.,'thumb':5.,'rest':0.,'victory':6.}
-idx_to_gestures = {1.:'open',2.:'middle',3.:'ring',4.:'little',5.:'thumb',0.:'rest',6.:'victory'}
+idx_to_gestures = {1.:'index',2.:'middle',3.:'ring',4.:'little',5.:'thumb',0.:'rest',6.:'victory'}
 
 def gen_training_matrix(directory_path, output_file, cols_to_ignore, singleFrame=1,period=1000,offset=500,auto_skip_all_fails=False):
     """
@@ -162,6 +162,7 @@ def gen_training_matrix(directory_path, output_file, cols_to_ignore, singleFrame
     return FINAL_MATRIX
 
 
+
 if __name__ == '__main__':
     """
     Main function. The parameters for the script are the following:
@@ -178,6 +179,7 @@ if __name__ == '__main__':
     if len(sys.argv) < 3:
         print ('arg1: input dir\narg2: output file')
         sys.exit(-1)
+        ''' see multimodal-framework/handleFeats.py for dialog box popup '''
     directory_path = sys.argv[1]
     output_file = sys.argv[2]
     
