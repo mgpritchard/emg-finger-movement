@@ -14,6 +14,17 @@ import numpy as np
 import pandas as pd
 import developModel as modelling
 
+def prob_conf_mat(results):
+    targets=results['targets']
+    distros=results['pred_distros']
+    probs = pd.DataFrame(distros,columns=sorted(list(set(targets))))
+    probs['targets']=targets
+    
+    per_targ=probs.groupby('targets')
+    sumprobs=per_targ.sum()
+    
+    sumprobs=sumprobs.reindex(index=['thumb','index','victory','middle','ring','little','rest'],columns=['thumb','index','victory','middle','ring','little','rest'])
+    return sumprobs
 
 def validate_candidate(args):
     start=time.time()
@@ -108,3 +119,4 @@ if __name__ == '__main__':
                             'get_distros':True})
     
     results=validate_candidate(candidate_params)
+    prob_mat=prob_conf_mat(results)
