@@ -104,6 +104,7 @@ def gen_training_matrix(directory_path, output_file, cols_to_ignore, singleFrame
                                                                     cols_to_ignore = cols_to_ignore)
         except UnboundLocalError as e:
             print(traceback.format_exc())
+            ''' case where <1 windows could be made, thus matrix cannot compute feats and fails to assign feat names '''
             if auto_skip_all_fails==True:
                 print('Skipping the data file:\n'+full_file_path)
                 rejected_by_feat_script.append(full_file_path)
@@ -120,7 +121,27 @@ def gen_training_matrix(directory_path, output_file, cols_to_ignore, singleFrame
                     continue
                 else:
                     raise e
-        print ('resulting vector shape for the file', vectors.shape)
+        try:
+            print ('resulting vector shape for the file', vectors.shape)
+        except AttributeError as e:
+            print(traceback.format_exc())
+            ''' case where <2 windows could be made, thus cant be appended and vectors is None '''
+            if auto_skip_all_fails==True:
+                print('Skipping the data file:\n'+full_file_path)
+                rejected_by_feat_script.append(full_file_path)
+                continue
+            else:
+                skip=input('The above error was encountered when trying to generate '
+                      'features from the following data file:\n'+full_file_path+
+                      '\nWould you like to skip the file and continue? [Y/N]')
+                if skip == 'Y':
+                    rejected_by_feat_script.append(full_file_path)
+                    continue
+                elif skip == 'y':
+                    rejected_by_feat_script.append(full_file_path)
+                    continue
+                else:
+                    raise e
         
         
         if FINAL_MATRIX is None:
