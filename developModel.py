@@ -90,17 +90,17 @@ def classes_from_preds(targets,predlist_emg,classlabels):
     return gest_truth,gest_pred_emg,gesturelabels
 
 
-def confmat(y_true,y_pred,labels,modelname="",testset="",title=""):
+def confmat(y_true,y_pred,labels,modelname="",testset="",title="",normalize='true'):
     '''y_true = actual classes, y_pred = predicted classes,
     labels = names of class labels'''
-    conf=confusion_matrix(y_true,y_pred,labels=labels,normalize='true')
+    conf=confusion_matrix(y_true,y_pred,labels=labels,normalize=normalize)
     cm=ConfusionMatrixDisplay(conf,labels)
     #cm=ConfusionMatrixDisplay.from_predictions(y_true,y_pred,labels,normalise=None) #only in skl 1.2
     if modelname != "" and testset != "":
         title=modelname+'\n'+testset
     fig,ax=plt.subplots()
     ax.set_title(title)
-    cm.plot(ax=ax)
+    cm.plot(ax=ax,values_format='.0f' if normalize is None else None)
     #return conf
 
 

@@ -76,8 +76,10 @@ def validate_candidate(args):
     if args['plot_confmats']:
        # gesturelabels=[idx_to_gestures[label] for label in classlabels]
         gesturelabels=classlabels
-        gesturelabels=['thumb','open','victory','middle','ring','little','rest']
-        modelling.confmat(gest_truth,gest_pred_emg,gesturelabels,title='EMG')
+        gesturelabels=['thumb','index','victory','middle','ring','little','rest']
+        #gesturelabels=['index','victory','middle','ring','little','rest']
+        modelling.confmat(gest_truth,gest_pred_emg,gesturelabels,title='EMG',normalize=None)
+        modelling.confmat(gest_truth,gest_pred_emg,gesturelabels,title='EMG',normalize='true')
     
     end=time.time()
     return {
