@@ -43,7 +43,10 @@ def scale_feats_test(data,scaler):
         return data
     cols_to_ignore=list(data.filter(regex='^ID_').keys())
     cols_to_ignore.append('Label')
-    data[data.columns[~data.columns.isin(cols_to_ignore)]]=scaler.fit_transform(data[data.columns[~data.columns.isin(cols_to_ignore)]])
+    #data[data.columns[~data.columns.isin(cols_to_ignore)]]=scaler.fit_transform(data[data.columns[~data.columns.isin(cols_to_ignore)]])
+    data[data.columns[~data.columns.isin(cols_to_ignore)]]=scaler.transform(data[data.columns[~data.columns.isin(cols_to_ignore)]])
+    # also pandas SettingWithCopyWarning would suggest this doesnt actually affect data, but it demonstrably does
+    # https://stackoverflow.com/questions/20625582/how-to-deal-with-settingwithcopywarning-in-pandas
     return data
 
 def drop_ID_cols(csv_dframe):
