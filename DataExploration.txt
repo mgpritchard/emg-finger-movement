@@ -6,7 +6,7 @@ verify this is the same location for Electrodes 2 & 3.
 verify that the location of Movement_2 is >150 samples later than the start of Movement_1
 -- Yes: we now know it is one 150sample extract per movement, not overlapping
 verify that the location of Movement_12 is later than that of Movement_1 and Movment_2
--- Yes: we can now assume the moveme	nt extracts are sequential
+-- Yes: we can now assume the movement extracts are sequential
 
 Visualise the first 4 movements on Electrode 1. These will definitely be train data, so not biasing. Just getting a sense of the possible sample frequency / movement duration.
 -- 1 movement every 200 samples (approx 100 samples on, 100 samples off). 727 total, speculate either 1 second on 1 second off at 100Hz ie 10mins total, or 0.5 seconds on 0.5 seconds off at 200Hz ie 5mins total

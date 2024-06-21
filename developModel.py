@@ -141,15 +141,26 @@ def train_test(args):
     if not args['prebalanced']: 
         emg_ppt=balance_set(emg_ppt)
     
+    ''' accounting for mis-named class label '''
+    if 'open' in emg_ppt['Label'].unique():
+        emg_ppt.loc[emg_ppt['Label'] == 'open','Label']='index'
     
     emg_ppt.sort_values(['ID_pptID','ID_run','Label','ID_gestrep','ID_tend'],ascending=[True,True,True,True,True],inplace=True)
     emg_ppt=emg_ppt.reset_index(drop=True)
     emg_ppt['ID_stratID']=emg_ppt['ID_run'].astype(str)+emg_ppt['Label'].astype(str)+emg_ppt['ID_gestrep'].astype(str)
+    if 0:
+        emg_ppt['ID_stratID']=emg_ppt['ID_run'].astype(str)+emg_ppt['Label'].astype(str)+emg_ppt['ID_gestrep'].astype(str)
+    else:
+        ''' training data should be 350 performances each so grouping by batches of 70'''
+        emg_ppt['ID_reps70']=((emg_ppt['ID_gestrep']-1)/70).astype(int)
+        #emg_ppt['ID_stratID']=emg_ppt['ID_run'].astype(str)+emg_ppt['Label'].astype(str)+((emg_ppt['ID_gestrep']/10).astype(int)).astype(str)
+        emg_ppt['ID_stratID']=emg_ppt['ID_run'].astype(str)+emg_ppt['Label'].astype(str)+emg_ppt['ID_reps70'].astype(str)
 
     random_split=random.randint(0,100)
     gest_perfs=emg_ppt['ID_stratID'].unique()
-    gest_strat=pd.DataFrame([gest_perfs,[perf.split('.')[1][-1] for perf in gest_perfs]]).transpose()
-    train_split,test_split=train_test_split(gest_strat,test_size=0.33,random_state=random_split,stratify=gest_strat[1])
+    #gest_strat=pd.DataFrame([gest_perfs,[perf.split('.')[1][-1] for perf in gest_perfs]]).transpose()
+    gest_strat=pd.DataFrame([gest_perfs,[''.join(filter(str.isalpha, perf)) for perf in gest_perfs]]).transpose()
+    train_split,test_split=train_test_split(gest_strat,test_size=0.4,random_state=random_split,stratify=gest_strat[1])
 
     emg_train=emg_ppt[emg_ppt['ID_stratID'].isin(train_split[0])]
     emg_test=emg_ppt[emg_ppt['ID_stratID'].isin(test_split[0])]
@@ -225,8 +236,8 @@ def optimise_model(prebalance=False,platform='not server',iters=35):
         
     trials=Trials()
 
-    space.update({'l1_sparsity':0.005}) #0.002
-    space.update({'l1_maxfeats':67}) # 67=sqrt(6804*0.66)=sqrt(4490), ie size of train set
+    space.update({'l1_sparsity':0.005}) 
+    space.update({'l1_maxfeats':64}) # 64=sqrt(6804*0.6)=sqrt(4082), ie size of opt-train set
     best = fmin(train_test,
             space=space,
             algo=tpe.suggest,

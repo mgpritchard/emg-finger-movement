@@ -30,13 +30,18 @@ def validate_candidate(args):
     start=time.time()
     if not args['data_in_memory']:
         emg_train=pd.read_csv(args['emg_training_path'],delimiter=',')
-        emg_validate=pd.read_csv(args['emg_validation_path'])
+        emg_validate=pd.read_csv(args['emg_validation_path'],delimiter=',')
     else:
         emg_train=args['emg_train']
         emg_validate=args['emg_validate']
    # if not args['prebalanced']: 
    #     emg_ppt=balance_set(emg_ppt)
     
+    ''' accounting for mis-named class label '''
+    if 'open' in emg_train['Label'].unique():
+        emg_train.loc[emg_train['Label'] == 'open','Label']='index'
+    if 'open' in emg_validate['Label'].unique():
+        emg_validate.loc[emg_validate['Label'] == 'open','Label']='index'
     
     emg_train.sort_values(['ID_pptID','ID_run','Label','ID_gestrep','ID_tend'],ascending=[True,True,True,True,True],inplace=True)
     emg_train=emg_train.reset_index(drop=True)
@@ -112,7 +117,10 @@ if __name__ == '__main__':
     candidate_params=pickle.load(open(identified_params_path,'rb'))
     
     candidate_params.update({'emg_training_path':'/home/michael/Documents/Aston/PostSubmission/RATask/working-dataset/featureset/traintestFeats_Labelled.csv',
-                            'emg_validation_path':'/home/michael/Documents/Aston/PostSubmission/RATask/working-dataset/featureset/sparetestFeats_Labelled.csv',
+                            #'emg_validation_path':'/home/michael/Documents/Aston/PostSubmission/RATask/working-dataset/featureset/sparetestFeats_Labelled.csv',
+                            #'emg_validation_path':'/home/michael/Documents/Aston/PostSubmission/RATask/working-dataset/featureset/nomove_traintestFeats_Labelled.csv',
+                            'emg_validation_path':'/home/michael/Documents/Aston/PostSubmission/RATask/working-dataset/featureset/validationFeats_Labelled.csv',
+                            #'emg_validation_path':'/home/michael/Documents/Aston/PostSubmission/RATask/working-dataset/featureset/nomove_validationFeats_Labelled.csv',
                             'data_in_memory':False,
                             'plot_confmats':True,
                             'get_train_acc':True,
@@ -120,3 +128,7 @@ if __name__ == '__main__':
     
     results=validate_candidate(candidate_params)
     prob_mat=prob_conf_mat(results)
+    #sparetest_res_path='/home/michael/Documents/Aston/PostSubmission/RATask/results/results_on_sparetest.pkl'
+    #pickle.dump(results,open(sparetest_res_path,'wb'))
+    #unseen_res_path='/home/michael/Documents/Aston/PostSubmission/RATask/results/results_on_validate.pkl'
+    #pickle.dump(results,open(unseen_res_path,'wb'))
