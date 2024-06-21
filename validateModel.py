@@ -14,6 +14,18 @@ import numpy as np
 import pandas as pd
 import developModel as modelling
 
+def balance_unless_tiny(emg_set):
+    emg_set.sort_values(['ID_pptID','ID_run','Label','ID_gestrep','ID_tend'],ascending=[True,True,True,True,True],inplace=True)    
+    emg=emg_set.reset_index(drop=True)
+    
+    counts=emg['Label'].value_counts()
+    stratsize=np.min(counts[counts > np.median(counts)/2])
+    print('subsampling to ',str(stratsize),' per class')
+    balemg = emg.groupby('Label',group_keys=False)
+    balemg=balemg.apply(lambda x: x.sample(stratsize) if len(x)>stratsize else x)
+    
+    return balemg
+
 def prob_conf_mat(results):
     targets=results['targets']
     distros=results['pred_distros']
@@ -47,6 +59,12 @@ def validate_candidate(args):
     if 0:
         emg_train=emg_train.loc[emg_train['Label'] != 'thumb']
         emg_validate=emg_validate.loc[emg_validate['Label'] != 'thumb']
+    
+    ''' mild balancing of spare-test data '''
+    if 0:
+        emg_validate = balance_unless_tiny(emg_validate)
+        
+        
     
     emg_train.sort_values(['ID_pptID','ID_run','Label','ID_gestrep','ID_tend'],ascending=[True,True,True,True,True],inplace=True)
     emg_train=emg_train.reset_index(drop=True)
