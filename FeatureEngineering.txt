@@ -20,19 +20,6 @@ RF: trees, could also vary max_samples and max_depth a little
 SVM: linear is awkward (linear kernel in SVC tends to be slow, LinearSVC can't do probabilities), but we have LDA for a linear model
 LDA: split the shrinkage by solver!
 
-splitting traintest data 70/30, according to gesture performances. indicating a 98% accuracy on just 3 CASH iterations?
--- checked data splitting, during opt the traintest is indeed split properly with no apparent duplication, and with gesture performances grouped together.
--- it could just be classifying per file. test on *spare* validation data to see: if this is also suspiciously high, then try to test some non-movement data from the corresponding files - this should *not* be classified as a gesture.
-
----- checking on SPARE validation data, overall accuracy is 42%. (from svd-LDA)
----- confusion matrix shows most classes are ~40% correctly classified, with misclassifications often at a neighbouring finger. rest is well-identified. from a cursory manual observation, in many cases of a neighbouring-misclassification, the correct class had the 2nd highest probability (suggests an ensemble could help??)
----- for now, may try to control overfit by curtailing # of features. currently reducing to 67, sqrt(6804*0.66). but lets try e.g. half of that at 33? sparsity still 0.005
----- still at only 10 opt iterations (more would likely mean even more overfit)
----- could still be that data inherently is overfitting if eg there's different offset/DC bias in each class, but would then expect that to carry on till the validation data somewhat.
----- more likely it is some shorter term temporal overfit, yes i am splitting per gesture but gestures are short and are in quick succession, i'm not making sure that gestures 1-20 are grouped together as this becomes less of a random split.
----- with 33 gestures, still got exceptionally high train accuracy. this time an rbf-SVM. spare-test accuracy is marginally lower (40%), with similar distribution of errors again.
 
 dataset csv has wrong labels, "open" should read "index"
 
-for sake of argument, halving again to only 17 feats to try and fight overfit. train acc still very high, though more like 98 than 99.x%.
-Here the spare-test acc is 36%, though again similar distribution of errors. so definitely test the data-from-file, and also consider other anti-overfit tools (ensembling? Using Less Data? modifying train/test split during opt? different data split during opt?)

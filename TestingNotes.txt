@@ -1,0 +1,139 @@
+** NB at NO point are predictions made using locked-off validation data until explicitly noted at the very end of the log **
+
+
+splitting traintest data 70/30, according to gesture performances. indicating a 98% accuracy on just 3 CASH iterations?
+-- checked data splitting, during opt the traintest is indeed split properly with no apparent duplication, and with gesture performances grouped together.
+-- it could just be classifying per file. test on *spare* validation data to see: if this is also suspiciously high, then try to test some non-movement data from the corresponding files - this should *not* be classified as a gesture.
+
+
+-- checking on SPARE validation data, overall accuracy is 42%. (from svd-LDA)
+-- confusion matrix shows most classes are ~40% correctly classified, with misclassifications often at a neighbouring finger. rest is well-identified. from a cursory manual observation, in many cases of a neighbouring-misclassification, the correct class had the 2nd highest probability (suggests an ensemble could help??)
+-- for now, may try to control overfit by curtailing # of features. currently reducing to 67, sqrt(6804*0.66). but lets try e.g. half of that at 33? sparsity still 0.005
+-- still at only 10 opt iterations (more would likely mean even more overfit)
+-- could still be that data inherently is overfitting if eg there's different offset/DC bias in each class, but would then expect that to carry on till the validation data somewhat.
+-- more likely it is some shorter term temporal overfit, yes i am splitting per gesture but gestures are short and are in quick succession, i'm not making sure that gestures 1-20 are grouped together as this becomes less of a random split.
+-- with 33 gestures, still got exceptionally high train accuracy. this time an rbf-SVM. spare-test accuracy is marginally lower (40%), with similar distribution of errors again.
+
+
+----------
+-- on desperately fighting overfit --
+----------
+
+for sake of argument, halving again to only 17 feats to try and fight overfit. train acc still very high, though more like 98 than 99.x%.
+Here the spare-test acc is 36%, though again similar distribution of errors. so definitely test the data-from-file, and also consider other anti-overfit tools (ensembling? Using Less Data? modifying train/test split during opt? different data split during opt?)
+
+
+using 67 feats but splitting traintest 33train-67test during opt resulted in an svd-LDA, still high train acc but 43% spare-validation acc, with mostly good error distribution.
+
+trying with 67 feats, regular 67train-33test split during opt, but splitting grouped no longer by performance but by batch of 10 performances, for potentially lesser temporal leakage:
+still high train acc but also some weaker attempts; ie tuning more necessary(?). top is rbf-svm but LDAs notably never bad, on spare-val this is 37% acc, quite consistent across all classes.
+
+trying the same but with 33 feats. again high train acc but less extreme except for in optimal case. this is rbf-svm again but THIS is 42% on the spare-val, with some classes a fair bit higher. error distribution a bit less typical though.
+
+the same, 33 feats, and the 33train-67test split. train acc now 94% with an lsqr-LDA.
+on spare-val this is 39% acc, with some higher eg ring 48% (and most misclassifications as little), though some like Index quite a bit lower.
+
+
+----------
+-- on non-movement ("in-between") data --
+----------
+
+checking non-movement data.
+extracted from the raw files [gesture_loc+150 : next_gesture_loc], to capture the signals in-between-gestures, where they should not belong to a movement class. but *labelled* these as belonging to their movement classes.
+same splits as real data for traintest and validation, with 1 fewer per class from "spare" (as we can't get the very final nomove period easily). dont *really* need to divide them this way but helps us to know where data came from.
+developing model on actual traintest data, then testing that on this nonmovement data. IF the nonmovement is "correctly" classified, this suggests classifier is separating gestures by file of origin, not by gesture. this is stronger if the nonmove-traintest is more "correctly" classified.
+
+going with "usual": 67 features, 1/3rd testing in each opt, BUT with split grouped by 10s
+on modelling traintest, very strong with an svd-LDA.
+on spare-test, 42%, with *some* good error distribution ie lots of ring as little.
+( -- hyp to do with subject's ability to move ring finger in isolation?)
+on no_movement from traintest period, predictions are often rest but not infrequently Their Own Wrong Class too -- index notably highly classified as index, likewise middle. (many things wrongly classified as middle but that applies to real data too, maybe just quirk of this one model, or maybe Middle has some junk data)
+on no_movement from spare-test, somewhat similar.
+
+
+BUT wait, with handleFeats fixed so that scale_test only transforms, and doesnt fit_transform, then no_movement from traintest is nearly all rest. no_movement from spare-test is heavily rest. ACTUAL spare-test is 35% accurate...
+OK, applying fit_transform during scale_test is the same as creating a NEW scaler and doing a fit_transform with it, ie it was not applying the static Tx. fixing that now, this will affect the model dev too as the opt_test_split was scaled wrongly this way. this should encourage something which can use feature scaling translated across data? ie it must learn to use things from the original data with new data; new data will no longer be brought in line.
+
+
+so trying model dev again, as just done above (67 features, 1/3rd testing in each opt, BUT with split grouped by 10s)
+this gets us rbf-SVM with very high train acc.
+on spare-test it gets 33%. most classes around this, but victory has stolen some away from many classes.
+ -- could suggest victory was very "wide" so is being a "catchall"
+on no_move spare-test, most things correctly identified as rest, but with some fallng into thumb and index
+on no_move traintest, nearly everything correctly identified as rest.
+
+
+- could issue be victory? could its less data mean its given a wider portion of the space? less data with which to precision-tailor it?
+
+trying the *same* model config without victory, spare-test is 42% acc, with only Thumb stealing many.
+
+developing (CASH) a *new* config without victory:
+99 train acc with rbf-svm. on spare-test is still 42%, with thumb stealing lots.
+nomove spare-test is mostly rest, but still thumb steals many (and index steals a few)
+
+-- consider that thumb has greater range, and shorter muscles. we dont know experimental protocol, ie which thumb movements were done and how consistently. thumb movement may be coarser, leading to less precise class boundaries?
+
+try developing new config without thumb (but with victory):
+99 train acc with lsqr-LDA
+40% spare-test, most error distributions seem ok but victory still takes some.
+
+
+--------------
+-- on shuffling data in "batches" ---
+--------------
+
+trying with corrected scaling, all classes, opt split now 60/40 (though even poorly opt seems to classify training data well), splitting done in batches of 20, down to 33 gestures.
+still insane train acc, with rbf-SVM
+spare-test acc only 29%
+
+
+one dissimilarity is that the optimised model is a random shuffle, but the test case is sequential data.
+but we *don't* want to only ever optimise for e.g. the latter part of the traintest data by doing a static chronological split, as we'll overfit/over-optimise
+
+
+consider, our training data is up to 350 repeats. even splitting by batches of 20, we will still have lots of TrainTrainTestTrainTrain.
+Instead try batches of 50 or even 100?
+
+
+with 67 feats, batches of 50, opt-train-split 60% opt-test-split 40%:
+train acc is slightly less insane, max is still 98 with an svd-LDA
+on spare-test, downsampling the overrepresented classes to the median this gets 35% with good error distribution except for victory still swallowing some ring/little. semi-promising
+
+with 67 feats, batches of 100, opt-train-split 60/40:
+train acc sligtly less insane, max is 96 with svd-LDA; the lower ones are thumb and victory
+on spare-test, downsampling again, this gets 36%, similar error distribution
+
+same setup again (new day) gets a 25-tree 5-depth RF, at 96%.
+This does only 30% on spare-test, but AGAIN with very similar error distribution.
+
+so we have same errors on both linear and nonlinear models, and multiple versions of them -- suggests our issue is indeed in a shift in the data itself.
+this is hard to compensate for as we dont seem to have such shifts present in the traintest set. grouping by batches of 100 can *kind of* help?
+
+
+-----------
+-- on batch splitting that actually works --
+-----------
+
+corrected groupings; training data is 350 of most classes so we do this in batches of 70, for 5 batches total. then split those 60/40 opt-train/opt-test, with CORRECTED stratification. 10 opt iterations (it converges quick anyway!)
+reducing to 64 features, since opt-train = 6804*0.6=4082, sqrt(4082)=64
+here we get train acc 98.5 with eigen LDA
+on spare-test this is 36%, with mainly same error pattern (some victory- and thumb- sink), but most classes 30-40% accurate. rest and thumb more accurate, ring often classified as little.
+no_movement spare-test are mostly classified as rest. no_movement traintest are nearly all classified as rest.
+
+it seems we're making no further progress here (and in fact may have made none at all), so lock in with the setup as we are.
+
+
+----------
+-- on testing the thing! --
+----------
+
+trying the aforementioned eigen-LDA with actual test data!
+it's great!!! clearly shows: ring/little confusion, index/peace/middle confusion
+
+Interestingly, rest is predicted as thumb (but not vice versa) -- could short thumb muscles etc mean some of the training thumb data was equivalent to rest (nothing happened at forearm)?
+
+and good also with the no_movement test data! correctly puts big majority of it into Rest
+
+so basically its just the spare data at the end that's wonky? can discuss this - the extent to which the model holds up over time. may be the errors within that spare data are themselves correlated with time? but idk that's a low priority to check for a demo exercise
+
+got a "probabilistic confusion matrix" too which is fun -- visualising predictions in a way that considers whether an error may be [0.9wrong, 0.1right] or [0.51wrong, 0.49right]. not that that makes it less of an error, but could suggest where to refine / develop further.
