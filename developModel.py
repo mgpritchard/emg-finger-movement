@@ -151,10 +151,17 @@ def train_test(args):
     
     emg_ppt.sort_values(['ID_pptID','ID_run','Label','ID_gestrep','ID_tend'],ascending=[True,True,True,True,True],inplace=True)
     emg_ppt=emg_ppt.reset_index(drop=True)
-    emg_ppt['ID_stratID']=emg_ppt['ID_run'].astype(str)+emg_ppt['Label'].astype(str)+emg_ppt['ID_gestrep'].astype(str)
+    
     if 0:
         emg_ppt['ID_stratID']=emg_ppt['ID_run'].astype(str)+emg_ppt['Label'].astype(str)+emg_ppt['ID_gestrep'].astype(str)
     else:
+        '''grouping not by performance but by batch of 10 performances, to try & combat temporal leakage'''
+        emg_ppt['ID_reps10']=(emg_ppt['ID_gestrep']/10).astype(int)
+        ''' grouping now by batch of 20 '''
+        emg_ppt['ID_reps20']=np.where(emg_ppt['ID_reps10']%2!=0, emg_ppt['ID_reps10']-1, emg_ppt['ID_reps10'])
+        ''' grouping by batches of 50 & 100 '''
+        emg_ppt['ID_reps50']=((emg_ppt['ID_gestrep']-1)/50).astype(int)
+        emg_ppt['ID_reps100']=((emg_ppt['ID_gestrep']-1)/100).astype(int)
         ''' training data should be 350 performances each so grouping by batches of 70'''
         emg_ppt['ID_reps70']=((emg_ppt['ID_gestrep']-1)/70).astype(int)
         #emg_ppt['ID_stratID']=emg_ppt['ID_run'].astype(str)+emg_ppt['Label'].astype(str)+((emg_ppt['ID_gestrep']/10).astype(int)).astype(str)
