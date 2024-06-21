@@ -42,6 +42,11 @@ def validate_candidate(args):
         emg_train.loc[emg_train['Label'] == 'open','Label']='index'
     if 'open' in emg_validate['Label'].unique():
         emg_validate.loc[emg_validate['Label'] == 'open','Label']='index'
+        
+    ''' trialling without victory class '''
+    if 0:
+        emg_train=emg_train.loc[emg_train['Label'] != 'thumb']
+        emg_validate=emg_validate.loc[emg_validate['Label'] != 'thumb']
     
     emg_train.sort_values(['ID_pptID','ID_run','Label','ID_gestrep','ID_tend'],ascending=[True,True,True,True,True],inplace=True)
     emg_train=emg_train.reset_index(drop=True)
@@ -63,6 +68,8 @@ def validate_candidate(args):
     sel_cols_emg=feats.sel_feats_l1_df(emg_train,sparsityC=args['l1_sparsity'],maxfeats=args['l1_maxfeats'])
     sel_cols_emg=np.append(sel_cols_emg,emg_train.columns.get_loc('Label'))
     emg_train=emg_train.iloc[:,sel_cols_emg]
+    
+    #print(emg_train.columns.values)
     
     emg_model = ml.train_optimise(emg_train, args['emg']['emg_model_type'], args['emg'])
     classlabels = emg_model.classes_

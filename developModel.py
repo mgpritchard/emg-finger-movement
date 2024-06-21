@@ -144,6 +144,10 @@ def train_test(args):
     ''' accounting for mis-named class label '''
     if 'open' in emg_ppt['Label'].unique():
         emg_ppt.loc[emg_ppt['Label'] == 'open','Label']='index'
+        
+    ''' trialling without victory class '''
+    if 0:
+        emg_ppt=emg_ppt.loc[emg_ppt['Label'] != 'thumb']
     
     emg_ppt.sort_values(['ID_pptID','ID_run','Label','ID_gestrep','ID_tend'],ascending=[True,True,True,True,True],inplace=True)
     emg_ppt=emg_ppt.reset_index(drop=True)
